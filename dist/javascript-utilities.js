@@ -5,7 +5,7 @@
 
 ****************************************************************************/
 
-;(function ($, window, document, undefined) {
+;(function (window, document, undefined) {
 	"use strict";
 
 	//Create fcoo-namespace
@@ -60,28 +60,11 @@
 
 
 
-
-
-
-
-
-
-	/******************************************
-	Initialize/ready
-	*******************************************/
-	$(function() { //"$( function() { ... });" is short for "$(document).ready( function(){...});"
-
-
-	}); //End of initialize/ready
-	//******************************************
-
-
-
-}(jQuery, this, document));;/****************************************************************************
+}(this, document));;/****************************************************************************
 	json.js,
 ****************************************************************************/
 
-;(function ($, window, document, undefined) {
+;(function (window, document, undefined) {
 	"use strict";
 
 	//Create fcoo-namespace
@@ -101,12 +84,12 @@
 	};
 
 
-}(jQuery, this, document));;/****************************************************************************
+}(this, document));;/****************************************************************************
 	math.js,
 
 ****************************************************************************/
 
-;(function ($, window, document, undefined) {
+;(function (window, document, undefined) {
 	"use strict";
 
 	var nsMath = window;
@@ -172,11 +155,11 @@
 		return v / Math.pow(10, l);
 	};
 
-}(jQuery, this, document));;/****************************************************************************
+}(this, document));;/****************************************************************************
 	url.js,
 ****************************************************************************/
 
-;(function ($, window, document, undefined) {
+;(function (window, document, undefined) {
 	"use strict";
 
 	//Create fcoo-namespace
@@ -302,4 +285,4 @@
 
 
 
-}(jQuery, this, document));
+}(this, document));

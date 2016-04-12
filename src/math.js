@@ -3,7 +3,7 @@
 
 ****************************************************************************/
 
-;(function ($, window, document, undefined) {
+;(function (window, document, undefined) {
 	"use strict";
 
 	var nsMath = window;
@@ -69,4 +69,4 @@
 		return v / Math.pow(10, l);
 	};
 
-}(jQuery, this, document));
+}(this, document));

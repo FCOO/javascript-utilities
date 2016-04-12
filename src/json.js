@@ -2,7 +2,7 @@
 	json.js,
 ****************************************************************************/
 
-;(function ($, window, document, undefined) {
+;(function (window, document, undefined) {
 	"use strict";
 
 	//Create fcoo-namespace
@@ -22,4 +22,4 @@
 	};
 
 
-}(jQuery, this, document));
+}(this, document));
