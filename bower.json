@@ -1,0 +1,32 @@
+{
+  "name": "javascript-utilities",
+  "version": "0.1.0",
+  "homepage": "https://github.com/FCOO/javascript-utilities",
+  "authors": [
+    "Niels Holt nho@fcoo.dk"
+  ],
+  "description": "",
+  "main": [
+    "dist/utilities.min.js",
+    "dist/utilities.min.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/FCOO/javascript-utilities.git"
+  },
+  "dependencies": {
+    "jquery": "^2.2.3"
+  },
+  "devDependencies": {},
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "moduleType": [
+    "es6"
+  ]
+}
