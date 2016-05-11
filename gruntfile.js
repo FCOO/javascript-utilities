@@ -8,6 +8,7 @@ module.exports = function(grunt) {
 	var getobject = require('getobject');
 
 
+	//*****************************************************
 	function readFile(filename, isJSON, stripComments, defaultContents){
 		if (grunt.file.exists(filename)){
 			var contents = grunt.file.read(filename) ;
@@ -19,6 +20,12 @@ module.exports = function(grunt) {
 			return defaultContents;
 	}
 
+	//****************************************************
+	function readJSONFile(filename, defaultContents){
+		return readFile(filename, true, true, defaultContents || {});
+	}
+
+	//*****************************************************
 	function writeFile(fileName, isJSON, contents ){
 		if (isJSON)
 		  contents = JSON.stringify(contents);
@@ -27,7 +34,7 @@ module.exports = function(grunt) {
 
 	//*******************************************************
 	// Variables to define the type of repository
-	var gruntfile_setup =	readFile('Gruntfile_setup.json', true, true, {
+	var gruntfile_setup =	readJSONFile('Gruntfile_setup.json', {
 													isApplication							: false,	//true for stand-alone applications. false for packages/plugins
 													haveStyleSheet						: false,	//true if the packages have css and/or scss-files
 													haveJavaScript						: true,		//true if the packages have js-files
@@ -63,10 +70,15 @@ module.exports = function(grunt) {
 			//new variable for easy syntax
 			isPackage				= !isApplication,
 
+			//File name for saving original vesion of bower.json
+			ORIGINALFileName = '_ORIGINAL_bower.json',
+
+			//options for concat
+			concat_options_js		= { separator: grunt.util.linefeed + ';' + grunt.util.linefeed },
+			concat_options_css	= { separator: grunt.util.linefeed },
 
 
-
-	//options for minifing css-files.
+			//options for minifing css-files.
 			cssminOptions = {
 				keepBreaks					: false,	// whether to keep line breaks (default is false)
 				keepSpecialComments	: 0,			// * for keeping all (default), 1 for keeping first one only, 0 for removing all
@@ -97,7 +109,7 @@ module.exports = function(grunt) {
 	//*******************************************************
 			today									= grunt.template.today("yyyy-mm-dd-HH-MM-ss"),
 			todayStr							= grunt.template.today("dd-mmm-yyyy HH:MM"),
-			bwr										= grunt.file.readJSON('bower.json'),
+			bwr										= /*grunt.file.readJSON*/readJSONFile('bower.json'),
 			currentVersion				= bwr.version,
 			name									= bwr.name,
 			adjustedName					= name.toLowerCase().replace(' ','_'),
@@ -170,16 +182,12 @@ module.exports = function(grunt) {
 	}
 
 	//*******************************************************
-	var ORIGINALFileName = '_ORIGINAL_bower.json';
-	function copyBowerJsonToORIGINAL(){
-		if (grunt.file.exists(ORIGINALFileName))
-		  grunt.file.delete(ORIGINALFileName);
-		grunt.file.copy('bower.json', ORIGINALFileName );
-	}
 
+
+
+	//copyORIGINALToBowerJson: copy _ORIGINAL_bower.json -> bower.json
 	function copyORIGINALToBowerJson(){
 		if (grunt.file.exists(ORIGINALFileName)){
-
 			grunt.file.copy(ORIGINALFileName, 'bower.json');
 		  grunt.file.delete(ORIGINALFileName);
 		}
@@ -188,70 +196,49 @@ module.exports = function(grunt) {
 	//Check if _ORIGINAL_bower.json exists => probably an error in last run => copy it back;
 	copyORIGINALToBowerJson();
 
+	/*******************************************************
+	eachDependencies( packageFunc, options )
+	Visit each dependencies and dependencies of dependencies and ... in bower.json
+	bwr: json-object (= the contents of the current bower.json)
+	packageFunc: function( packageName, bwr, options, firstlevel ) - function to process the bwr
 
-	//*******************************************************
-	//Find overrides from all dependencies
-	//overridesList = [PACKAGENAME] of { overrides: {}, overridesInPackage: string }
-	//packageList = [PACKAGENAME] of boolean
-	function readOverrides( bwr, packageList, overridesList, first ){
-		var packageName;
 
-		//Find overrides
-		var overrides = bwr.overrides || {};
-		for (packageName in overrides)
-			if ( overrides.hasOwnProperty(packageName) ){
-				//Check if the package is already in overridesList
-				if (overridesList[packageName]){
-					if (!overridesList[packageName].firstLevel)
-						writelnYellow('WARNING - The package "' + packageName + '" has overrides in both "' + bwr.name + '" and "' + overridesList[packageName].overridesInPackage + '"' );
-				}
-				else
-					overridesList[packageName] = {
-						'overrides'					: overrides[packageName],
-						'overridesInPackage': bwr.name,
-						'firstLevel'				: first
-					}
-		}
+	_eachDependencies( bwr, packageFunc, options, packageList, firstLevel )
+	Internal version with additional parametre
+	firstlevel: boolean - true when bwr is the packages own bower.json
+	packageList = [PACKAGENAME] of boolean
+
+	*******************************************************/
+	function _eachDependencies( packageName, bowerJson, packageFunc, options, packageList, firstLevel, dotBowerJson ){
+		var dependenciesPackageName,
+				dependencies = bowerJson.dependencies || dotBowerJson.dependencies || {};
+
+		packageFunc(packageName, bowerJson, options, firstLevel, dotBowerJson);
 
 		//Find dependencies
-		var dependencies = bwr.dependencies || {};
-		for (packageName in dependencies)
-			if ( dependencies.hasOwnProperty(packageName) ){
+		for (dependenciesPackageName in dependencies)
+			if ( dependencies.hasOwnProperty(dependenciesPackageName) ){
 				//If the package already has been check => continue
-				if (packageList[ packageName ])
+				if (packageList[ dependenciesPackageName ])
 				  continue;
-				packageList[ packageName ] = true;
+				packageList[ dependenciesPackageName ] = true;
 
 				//Read the dependences of the package
-				var nextBwr = readFile('bower_components/'+packageName +'/bower.json', true, false, {});
-				readOverrides( nextBwr, packageList, overridesList, false );
+				_eachDependencies(
+					dependenciesPackageName,
+					readJSONFile('bower_components/' + dependenciesPackageName + '/bower.json'),
+					packageFunc,
+					options,
+					packageList,
+					false,
+					readJSONFile('bower_components/' + dependenciesPackageName + '/.bower.json')
+				);
 		}
-
 	}
-	var packageList = [],
-			overridesList = [],
-			overrides = {},
-			packageName;
-	readOverrides( bwr, packageList, overridesList, true );
-	for (packageName in overridesList)
-		overrides[packageName] = overridesList[packageName].overrides;
 
-	//Save the new overrides in bwr
-	bwr.overrides = overrides;
-
-
-	//*******************************************************
-	//Converts bwr.overrides to options for bower-concat
-	for (var packageName in overrides)
-		if ( overrides.hasOwnProperty(packageName) ){
-			var p_overrides = overrides[packageName];
-			//Removed if (p_overrides.dependencies)
-			//Removed   bower_concat_options.dependencies[packageName] = p_overrides.dependencies;
-			if (p_overrides.main)
-			  bower_concat_options.mainFiles[packageName] = p_overrides.main;
-		}
-
-
+	function eachDependencies( packageFunc, options ){
+		_eachDependencies( bwr.name, bwr, packageFunc, options, [], true, readJSONFile('.bower.json') );
+	}
 
 
 	//*******************************************************
@@ -268,7 +255,7 @@ module.exports = function(grunt) {
 			src_sass_to_src_css_files		= merge( src_to_src_files,		sass_to_css_files ), //src/*.scss => src/*.css
 			temp_sass_to_temp_css_files	= merge( temp_to_src_files,	sass_to_css_files	), //temp/*.scss => temp/*.css
 
-			jshint_options				= readFile('.jshintrc'			, true, true,	{}),
+			jshint_options				= readJSONFile('.jshintrc'),
 
 			title = 'fcoo.dk - ' + name,
 
@@ -286,6 +273,8 @@ module.exports = function(grunt) {
 	}
 
 	//***********************************************
+	// grunt.initConfig
+	//***********************************************
 	grunt.initConfig({
 		//** clean **
 		clean: {
@@ -295,19 +284,29 @@ module.exports = function(grunt) {
 			temp_disk_jscss	: ["temp_dist/*.js", "temp_dist/*.css"]
 
 		},
-
+/*
+concat_options_js
+concat_options_css
+*/
 		//** concat **
     concat: {
-      options: { separator: ';' },
-			temp_to_temp_dist_srcjs:			{	files: { 'temp_dist/src.js'			: ['temp/**/*.js']				} },
-			temp_to_temp_dist_srccss:			{	files: { 'temp_dist/src.css'		: ['temp/**/*.css']			} },
-			temp_to_temp_dist_srcminjs:		{ files: { 'temp_dist/src.min.js'	: ['temp/**/*.min.js']	} },
-			temp_to_temp_dist_srcmincss:	{ files: { 'temp_dist/src.min.css': ['temp/**/*.min.css']	} },
+      options: concat_options_css, //{ separator: grunt.util.linefeed },
+			temp_to_temp_dist_srcjs						: {	files: { 'temp_dist/src.js'			: ['temp/**/*.js']			}, options: concat_options_js },
+			temp_to_temp_dist_srccss					: {	files: { 'temp_dist/src.css'		: ['temp/**/*.css']			} },
+			temp_to_temp_dist_srcminjs				: { files: { 'temp_dist/src.min.js'	: ['temp/**/*.min.js']	}, options: concat_options_js },
+			temp_to_temp_dist_srcmincss				:	{ files: { 'temp_dist/src.min.css': ['temp/**/*.min.css']	} },
 
-			temp_dist_js_to_appnamejs					: {	dest: 'dist/'+name_today+'.js',				src: ['temp_dist/bower_components.js',			'temp_dist/src.js'			] }, //Combine the src.js and bower_components.js => APPLICATIONNAME_TODAY.js
-			temp_dist_css_to_appnamecss				: {	dest: 'dist/'+name_today+'.css',			src: ['temp_dist/bower_components.css',			'temp_dist/src.css'			] }, //Combine the src.css and bower_components.css => APPLICATIONNAME_TODAY.css
-			temp_dist_minjs_to_appnameminjs		: {	dest: 'dist/'+name_today+'.min.js',		src: ['temp_dist/bower_components.min.js',	'temp_dist/src.min.js'	] }, //Combine the src.min.js and bower_components.js => APPLICATIONNAME_TODAY.min.js
-			temp_dist_mincss_to_appnamemincss	: {	dest: 'dist/'+name_today+'.min.css',	src: ['temp_dist/bower_components.min.css',	'temp_dist/src.min.css'	] }, //Combine the src.min.css and bower_components.css => APPLICATIONNAME_TODAY.min.css
+			//Combine the src.js and bower_components.js => APPLICATIONNAME_TODAY.js
+			temp_dist_js_to_appnamejs					: {	dest: 'dist/'+name_today+'.js',				src: ['temp_dist/bower_components.js',			'temp_dist/src.js'			], options: concat_options_js },
+
+			//Combine the src.css and bower_components.css => APPLICATIONNAME_TODAY.css
+			temp_dist_css_to_appnamecss				: {	dest: 'dist/'+name_today+'.css',			src: ['temp_dist/bower_components.css',			'temp_dist/src.css'			] },
+
+			//Combine the src.min.js and bower_components.js => APPLICATIONNAME_TODAY.min.js
+			temp_dist_minjs_to_appnameminjs		: {	dest: 'dist/'+name_today+'.min.js',		src: ['temp_dist/bower_components.min.js',	'temp_dist/src.min.js'	], options: concat_options_js },
+
+			//Combine the src.min.css and bower_components.css => APPLICATIONNAME_TODAY.min.css
+			temp_dist_mincss_to_appnamemincss	: {	dest: 'dist/'+name_today+'.min.css',	src: ['temp_dist/bower_components.min.css',	'temp_dist/src.min.css'	] },
 		},
 
 		//** copy **
@@ -419,7 +418,9 @@ module.exports = function(grunt) {
 
 		//** bower_concat **
 		bower_concat: {
-			options: { separator : ';' },
+			options: {
+				separator : grunt.util.linefeed + ';' + grunt.util.linefeed
+			},
 			all: {
 				dest: {
 					'js'	: 'temp_dist/bower_components.js',
@@ -428,7 +429,25 @@ module.exports = function(grunt) {
 
 				dependencies: bower_concat_options.dependencies	|| {},
 				exclude			: bower_concat_options.exclude			|| {},
-				mainFiles		: bower_concat_options.mainFiles		|| {}
+				mainFiles		: bower_concat_options.mainFiles		|| {},
+
+				callback: function(mainFiles, component) {
+					for (var i=0; i<mainFiles.length; i++ ){
+						//Use no-minified version if available
+						var parts = mainFiles[i].split('.'),
+								ext = parts.pop(),
+								min = parts.pop(),
+								fName;
+						if (min == 'min'){
+						  parts.push(ext);
+							fName = parts.join('.');
+							if (grunt.file.exists(fName))
+								mainFiles[i] = fName;
+						}
+					}
+					return mainFiles;
+				}
+
 			}
 		},
 
@@ -457,9 +476,9 @@ module.exports = function(grunt) {
 
 		// ** exec **
 		exec: {
-			bower_update		: 'bower update',
-			bower_update_dev: 'bower update --save-dev',
-			npm_install			: 'npm install'
+			bower_update				: 'bower update',
+			bower_update_latest	: 'bower update --force-latest',
+			npm_install					: 'npm install'
 		},
 
 		// ** replace **
@@ -585,12 +604,25 @@ module.exports = function(grunt) {
 				'userName' : ['config', '--global', 'user.name'],
 				'remoteSHA': ['rev-parse', 'origin/master']
 			}
-		}
+		},
 
+
+		json_generator: {
+			bower_json: {
+        dest: 'bower.json',
+        options: bwr
+			},
+			bower_json_to_ORIGINAL: {
+        dest: ORIGINALFileName,
+        options: bwr
+			}
+		}
 
 	});//end of grunt.initConfig({...
 
 	//****************************************************************
+
+	//Load grunt-packages
 	require('load-grunt-tasks')(grunt);
 
 	//Load grunt-packages
@@ -617,9 +649,10 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-auto-install');
 
 
+
+
 	//Run the gitinfo-task to get username
 	grunt.task.run('gitinfo');
-
 
 	//*********************************************************
 	//CREATE THE "DEFAULT" TAST
@@ -657,7 +690,7 @@ module.exports = function(grunt) {
     var nopt = require("nopt"),
 				knownOpts = {
 					"build" : Boolean,
-					"none" : Boolean,
+					"none"	: Boolean,
           "patch" : Boolean,
           "minor" : Boolean,
           "major" : Boolean,
@@ -924,6 +957,158 @@ module.exports = function(grunt) {
 
 
 	//*********************************************************
+	//CREATE THE "_BOWER_UPDATE_AND_CREATE_IN_TEMP" TAST
+	//*********************************************************
+
+	//Create task "_restore_bower_json" - restore the original bower.json
+	grunt.registerTask('_restore_bower_json', //function(){
+		copyORIGINALToBowerJson//()
+	//}
+	);
+
+	//*******************************************************
+	//Find overrides and resolutions from all dependencies
+	grunt.registerTask('_read_overrides_and_resolutions', function(){
+
+		//options.overridesList		= [PACKAGENAME] of { overrides: {}, overridesInPackage: string }
+		//options.resolutionsList	= [PACKAGENAME] of { resolutions: {}, resolutionsInPackage: string }
+		var options = {
+			overridesList		: [],
+			resolutionsList	: []
+		}
+
+		eachDependencies(
+			function( bowerPackageName, bowerJson, options, firstLevel, dotBowerJson){
+				var packageName, overrides, resolutions;
+
+				//Find overrides
+				overrides = bowerJson.overrides || {};
+				for (packageName in overrides)
+					if ( overrides.hasOwnProperty(packageName) ){
+						//Check if the package is already in options.overridesList
+						if (options.overridesList[packageName]){
+							if (!options.overridesList[packageName].firstLevel)
+								writelnYellow('WARNING - The package "' + packageName + '" has overrides in both "' + bowerPackageName + '" and "' + options.overridesList[packageName].overridesInPackage + '"' );
+						}
+						else
+							options.overridesList[packageName] = {
+								'overrides'					: overrides[packageName],
+								'overridesInPackage': bowerPackageName,
+								'firstLevel'				: firstLevel
+							}
+				}
+
+				//Find resolutions
+				resolutions = bowerJson.resolutions || {};
+				for (packageName in resolutions){
+					if ( resolutions.hasOwnProperty(packageName) ){
+						//Check if the package is already in options.resolutionsList
+						if (options.resolutionsList[packageName]){
+							if (!options.resolutionsList[packageName].firstLevel)
+								writelnYellow('WARNING - The package "' + packageName + '" has resolutions in both "' + bowerPackageName + '" and "' + options.resolutionsList[packageName].resolutionsInPackage + '"' );
+						}
+						else
+							options.resolutionsList[packageName] = {
+								'resolutions'					: resolutions[packageName],
+								'resolutionsInPackage': bowerPackageName,
+								'firstLevel'					: firstLevel
+							}
+					}
+				}
+			},
+			options
+		);
+
+		//Convert options.overridesList and options.resolutionsList to new overrides and resolutions for bower.json
+		var packageName,
+				overrides = {},
+				resolutions = {};
+		for (packageName in options.overridesList)
+			overrides[packageName] = options.overridesList[packageName].overrides;
+
+		for (packageName in options.resolutionsList)
+			resolutions[packageName] = options.resolutionsList[packageName].resolutions;
+
+		//Save the new overrides and resolutions in bwr
+		bwr.overrides = overrides;
+		bwr.resolutions = resolutions;
+
+		//Converts bwr.overrides to options for bower-concat
+		for (var packageName in overrides)
+			if ( overrides.hasOwnProperty(packageName) ){
+				var p_overrides = overrides[packageName];
+				//Removed if (p_overrides.dependencies)
+				//Removed   bower_concat_options.dependencies[packageName] = p_overrides.dependencies;
+				if (p_overrides.main)
+				  bower_concat_options.mainFiles[packageName] = p_overrides.main;
+			}
+
+	}); //end of grunt.registerTask('_read_overrides_and_resolutions', function(){
+
+
+//**********************************************************************************
+
+	//Add the tasks to the _bower_update_and_create_in_temp tast
+	var bowerTasks = [];
+
+	//Build bower_components.js/css and /images, and /fonts from the bower components
+	bowerTasks.push(
+		'clean:temp',					//clean /temp
+		'json_generator:bower_json_to_ORIGINAL', //Save original bower.json in _ORIGINAL_bower.json
+
+'continue:on',
+
+		'exec:bower_update_latest',		//>bower update - Update dependencies bower components AND force latest version (for now)
+		'json_generator:bower_json', //Save bwr in bower.json to overwrite any updates done by >bower update --force-latest
+
+
+		'_read_overrides_and_resolutions', //Find overrides and resolutions from all dependencies
+		'json_generator:bower_json', //Save update bwr in bower.json
+
+		'exec:bower_update',	//>bower update - Update dependencies bower components with new overrides and resolutions
+
+		'bower',							//Copy all "main" files to /temp
+		'bower_concat',				//Create bower_components.js and bower_components.css in temp_dist
+
+		'copy:temp_images_to_temp_dist',	//Copy all image-files from temp to temp_dist/images
+		'copy:temp_fonts_to_temp_dist',		//Copy all font-files from temp to temp_dist/fonts
+
+'continue:off'
+
+	);
+
+
+	bowerTasks.push( '_restore_bower_json' ); //Restore original bower.json
+
+	if (cleanUp)
+		bowerTasks.push( 'clean:temp' ); //clean /temp
+
+	bowerTasks.push( 'continue:on' );
+
+
+
+
+	//if (cleanUp)
+	//	bowerTasks.push(	'clean:temp' );											//clean /temp
+
+/*
+		'setup',
+    'continue:on',
+    // All tasks after this point will be run with the force
+    // option so that grunt will continue after failures
+    'test',
+    'continue:off',
+    // Tasks after this point will be run without the force
+    // option so that grunt exits if they fail
+    'cleanup',
+    'continue:fail-on-warning'
+		*/
+
+
+
+	grunt.registerTask('_bower_update_and_create_in_temp', bowerTasks);
+
+	//*********************************************************
 	//CREATE THE "DEV" AND "PROD" TAST
 	//*********************************************************
 
@@ -974,29 +1159,6 @@ module.exports = function(grunt) {
 
 
 	//********************************************************************
-	//Create task "_save_bower_overrides" - copy the original bower.json to _ORIGINAL_bower.jsom and write the new bower.json
-	grunt.registerTask('_save_bower_overrides', function(){
-		copyBowerJsonToORIGINAL();
-		writeFile('bower.json', true, bwr );
-	});
-	//Create task "_restore_bower_json" - restore the original bower.json
-	grunt.registerTask('_restore_bower_json', function(){
-		copyORIGINALToBowerJson()
-	});
-
-/*
-	function copyBowerJsonToORIGINAL(){
-		if (grunt.file.exists(ORIGINALFileName))
-		  grunt.file.delete(ORIGINALFileName);
-		grunt.file.copy('bower.json', ORIGINALFileName );
-	}
-
-	function copyORIGINALToBowerJson(){
-	function writeFile(fileName, isJSON, contents ){
-
-*/
-
-	//********************************************************************
 
 
 	var tasks				= [],
@@ -1022,15 +1184,14 @@ module.exports = function(grunt) {
 		tasks.push(
 			'clean:temp',
 			'clean:temp_dist',
-			'exec:bower_update_dev',	//Update devDependencies bower components
 			'check'
 		);
 
 
-		//If it is a application or dev => save bower.json to _ORIGINAL_bower.json and save bower.json with the new full overrides
-		if (isDevTasks || isApplication){
-		  tasks.push('_save_bower_overrides');
-		}
+		//If it is a application or prod => save bower.json to _ORIGINAL_bower.json and save bower.json with the new full overrides
+//		if (isApplication || isProdTasks){
+//		  tasks.push('json_generator:bower_json_to_ORIGINAL'); //MANGLER - skal det ske her?
+//		}
 
 		//BUILD JS (AND CSS) FROM SRC
 		if (isProdTasks){
@@ -1068,21 +1229,7 @@ module.exports = function(grunt) {
 
 		//BUILD BOWER COMPONENTS
 		if (isDevTasks || isApplication){
-			//Build bower_components.js/css and /images, and /fonts from the bower components
-			tasks.push(
-				'clean:temp',					//clean /temp
-				'exec:bower_update',	//Update dependencies bower components
-				'bower',							//Copy all "main" files to /temp
-				'bower_concat'				//Create bower_components.js and bower_components.css in temp_dist
-			);
-
-			tasks.push(
-				'copy:temp_images_to_temp_dist',	//Copy all image-files from temp to temp_dist/images
-				'copy:temp_fonts_to_temp_dist'		//Copy all font-files from temp to temp_dist/fonts
-			);
-			if (cleanUp)
-				tasks.push(	'clean:temp' );											//clean /temp
-
+			tasks.push('_bower_update_and_create_in_temp');
 		}
 
 
@@ -1148,9 +1295,9 @@ module.exports = function(grunt) {
 			tasks.push( isApplication ? 'copy:src__dist_files_to_dev': 'copy:src__dist_files_to_demo' );		//Copies alle files in src\_dist_files to dev or demo, excl. '_*.*'
 
 
-		//If it is a application or dev => restore bower.json from _ORIGINAL_bower.json
-		if (isDevTasks || isApplication)
-		  tasks.push('_restore_bower_json');
+		//If it is a application or prod => restore bower.json from _ORIGINAL_bower.json
+//		if (isApplication || isProdTasks)
+//		  tasks.push('_restore_bower_json');
 
 		if (cleanUp)
 		  tasks.push( 'clean:temp_dist');
@@ -1166,4 +1313,56 @@ module.exports = function(grunt) {
 		isProdTasks = !isProdTasks;
 	}
 
+
+	//*********************************************************
+	//CREATE THE "_CREATE_APPLICATION_MD" TAST - TODO
+	//*********************************************************
+
+	function _addPackage( pname, bowerJson, options, firstLevel, dotBowerJson ){
+		options.list.push({
+			name		: bowerJson.name			|| dotBowerJson.name			|| pname,
+			homepage: bowerJson.homepage	|| dotBowerJson.homepage	|| '',
+			version	: bowerJson.version		|| dotBowerJson.version		|| ''
+		});
+	}
+
+	grunt.registerTask('_create_application_md', function(){
+		var options = {list:[]};
+		eachDependencies( _addPackage, options);
+
+		options.list.sort(function(a, b){
+			var aName = a.name.toLowerCase(),
+					bName = b.name.toLowerCase();
+			if (aName < bName) return -1;
+			if (aName > bName) return 1;
+			return 0;
+		});
+
+		for (var i=0; i<options.list.length; i++ )
+			grunt.log.writeln(options.list[i].name, options.list[i].version);
+	});
+
+
 };
+
+/*
+Resort to using leaflet#1.0.0-rc.1 which resolved to leaflet#1.0.0-rc.1
+Code incompatibilities may occur.
+
+>> bower fcoo-leaflet                   extra-resolution Unnecessary resolution: fcoo-leaflet#0.2.*
+>> bower leaflet-control-mouseposition  extra-resolution Unnecessary resolution: leaflet-control-mouseposition#0.3.*
+>> bower leaflet-popup-extensions       extra-resolution Unnecessary resolution: leaflet-popup-extensions#0.1.*
+>> bower leaflet-double-scale           extra-resolution Unnecessary resolution: leaflet-double-scale#1.2.*
+>> bower leaflet-control-display        extra-resolution Unnecessary resolution: leaflet-control-display#0.1.*
+>> bower leaflet-zoom-modernizr         extra-resolution Unnecessary resolution: leaflet-zoom-modernizr#1.*
+
+>> Can't detect any .temp_dist/bower_components.js on main files for "fontawesome" component. You should explicitly define it via bower_concat's mainFiles option. See Readme for details.
+
+File temp_dist/bower_components.js created.
+>> Can't detect any .temp_dist/bower_components.css on main files for "fontawesome" component. You should explicitly define it via bower_concat's mainFiles option. See Readme for details.
+
+File temp_dist/bower_components.css created.
+Copied 8 files
+Copied 6 files
+>> 1 path cleaned.
+*/
