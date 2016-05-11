@@ -44,7 +44,7 @@
 	@param String id the parameter or hash-tag
 	@param String value the value of the id
 	@param String url the URL
-	@param Boolean isHashTag true id is a hash tag 
+	@param Boolean isHashTag true id is a hash tag
 	@return String the changed URL
 	*******************************************/
 	function _updateUrl(id, value, url, isHashTag) {
@@ -137,19 +137,16 @@
 		return url;
 	};
 
-	
-	
+
+
 	/******************************************
 	reloadPage
 	Reload the page.
 	Replace the original parameters and/or hashtags params and/or hashes
 	*******************************************/
 	nsUrl.reloadPage = function( params, hashes ){
-		var newHref = nsUrl.updateUrlParameters( params, nsUrl.updateUrlHashes( hashes ) );
-		if (window.location.href == newHref)
-			window.location.reload( true );
-		else
-			window.location.href = newHref;
+		window.location.href = nsUrl.updateUrlParameters( params, nsUrl.updateUrlHashes( hashes ) );
+		window.location.reload( true );
 	};
 
 
