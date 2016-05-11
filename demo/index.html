@@ -87,10 +87,14 @@
 	
 		header('url.js');
 			display('getUrlParameters()', true);
+
 			display("updateUrlParameter('paramA', 'newValue')");
 			display("updateUrlParameters({'paramA': 'newValue', 'paramB': 'newValue2'})");
 
-			button("reloadPage('paramA', 'newValue3');");
+			display("updateUrlHash('hashA', 'newValue')");
+			display("updateUrlHashes({'hashA': 'newValue', 'hashB': 'newValue2'})");
+
+			button("reloadPage({'paramA': 'newParamA'}, {'hashA':'newHashA'});");
 
 		header('json.js');
 			display("serializeJSON({anId:'aValue', anotherId:'another value'})");
