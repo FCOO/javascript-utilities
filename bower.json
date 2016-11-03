@@ -7,7 +7,7 @@
   ],
   "description": "",
   "main": [
-    "dist/javascript-utilities.min.js"
+    "dist/javascript-utilities.js"
   ],
   "repository": {
     "type": "git",
