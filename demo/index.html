@@ -9,7 +9,6 @@
 	<meta name='copyright' content='FCOO'>
 	<meta name='owner' content='FCOO'>
 
-  <link  href="bower_components.css" rel="stylesheet">	
 	<style>
 		p {
 			margin: 4px;
@@ -26,12 +25,10 @@
 </head>
 
 <body>
-	
 	<script src="bower_components.js"></script>
 	<script src="../src/_BASE.js"></script>
 	<script src="../src/math.js"></script>
 	<script src="../src/json.js"></script>
-	<script src="../src/url.js"></script>
 	<script src="../src/color.js"></script>
 	<script>
 		function header(text){
@@ -85,21 +82,9 @@
 			display('toDecimal(1234)');
 
 	
-		header('url.js');
-			display('getUrlParameters()', true);
-
-			display("updateUrlParameter('paramA', 'newValue')");
-			display("updateUrlParameters({'paramA': 'newValue', 'paramB': 'newValue2'})");
-
-			display("updateUrlHash('hashA', 'newValue')");
-			display("updateUrlHashes({'hashA': 'newValue', 'hashB': 'newValue2'})");
-
-			button("reloadPage({'paramA': 'newParamA'}, {'hashA':'newHashA'});");
-
 		header('json.js');
 			display("serializeJSON({anId:'aValue', anotherId:'another value'})");
 		
-
 		
 		header('color.js');
 			display('brightness(0, 0, 0)');

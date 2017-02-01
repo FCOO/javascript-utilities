@@ -11,7 +11,7 @@
     /*******************************************
     significant - return n rounded to significant sf
     *******************************************/
-    nsMath.significant =    function significant(n, sf) {
+    nsMath.significant = function significant(n, sf) {
         sf = sf - Math.floor(Math.log(n) / Math.LN10) - 1;
         sf = Math.pow(10, sf);
         n = Math.round(n * sf);
@@ -22,7 +22,7 @@
     /*******************************************
     precision
     *******************************************/
-    nsMath.precision =    function precision(n, dp) {
+    nsMath.precision = function precision(n, dp) {
         dp = Math.pow(10, dp);
         n = n * dp;
         n = Math.round(n);
@@ -33,7 +33,7 @@
     /*******************************************
     nearest
     *******************************************/
-    nsMath.nearest =    function nearest(n, v) {
+    nsMath.nearest = function nearest(n, v) {
         v = v ? v : 1;
         n = n / v;
         n = Math.round(n) * v;
@@ -43,7 +43,7 @@
     /*******************************************
     roundDownTo
     *******************************************/
-    nsMath.roundDownTo =    function roundDownTo(n, v) {
+    nsMath.roundDownTo = function roundDownTo(n, v) {
         v = v ? v : 1;
         n = n / v;
         n = Math.floor(n) * v;
@@ -53,7 +53,7 @@
     /*******************************************
     roundToRange
     *******************************************/
-    nsMath.roundToRange =    function roundToRange(v, min, max) {
+    nsMath.roundToRange = function roundToRange(v, min, max) {
         return Math.max( Math.min(v, max), min);
     };
 
@@ -64,7 +64,7 @@
             toDecimal(9)        = 0.9
             toDecimal(1234)    = 0.1234
     *******************************************/
-    nsMath.toDecimal =    function toDecimal(v) {
+    nsMath.toDecimal = function toDecimal(v) {
         var l = v.toString().length;
         return v / Math.pow(10, l);
     };

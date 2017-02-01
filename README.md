@@ -5,7 +5,6 @@
 ## Description
 Collection of JavaScript utilities
 - [Math](#math)
-- [Url](#url)
 - [JSON](#json)
 - [Color](#color)
 
@@ -44,40 +43,6 @@ E.g. `roundToRange(999, 100, 200) => 200 `
 #### `function toDecimal(v)`
 Convert a integer value v to a decimal 
 Eq	`toDecimal(89) => 0.89` or `toDecimal(9) => 0.9`
-
-<a href="url"></a>
-### Url (`src/url.js`)
-
-#### `function getUrlParameters()`
-Get all parameters AND hashes out of the URL (`window.location.href`).
-Return Array List of URL parameters key-value indexed
-
-    
-#### `function updateUrlParameter(param, paramVal  [, url])`
-Return a new url where `param` has been added or replaced with `paramVal`. 
-`url` is optional and default = `window.location.href` 
-		
-#### `function updateUrlParameters(params [, url])`
-Same as `updateUrlParameter` but with `params` as object a la `{"param1":"newValue", "param2":"newValue2"}` 
-
-#### `function updateUrlHash(hash, hashVal  [, url])`
-Return a new url where `hash` in the anchor has been added or replaced with `hashVal`. 
-`url` is optional and default = `window.location.href` 
-		
-#### `function updateUrlHashes(hashes [, url])`
-Same as `updateUrlHash` but with `hashes` as object a la `{"hash1":"newValue", "hash2":"newValue2"}` 
-
-#### `function reloadPage( params, hashes )`
-Reload the page after replacing original parameters and/or hash-tags with `params` and/or `hashes` (objects)
-
-
-
-
-
-
-
-
-
 
 <a href="json"></a>
 ### JSON (`src/json.js`)
