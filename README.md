@@ -64,6 +64,23 @@ Return 'white' (`#ffffff`) or 'black' (`#000000`) whichever has the highest cont
 #### `function colorContrastRGB( r, g, b )`
 As `colorContrastHEX` but for color as `(r,g,b)`
 
+#### `function rgbHex(red, green, blue, alpha)`
+Convert RGB(A) color to HEX
+
+    rgbHex(65, 131, 196, 0.2); //=> '4183c433'
+
+#### `function hexRgb(hex, options)`
+Convert HEX color to RGB
+
+    hexRgb('#cd2222cc');                    //=> {red: 205, green: 34, blue: 34, alpha: 0.8}
+    hexRgb('#cd2222cc', {format: 'array'}); //=> [205, 34, 34, 0.8]
+
+#### `function hexSetAlpha(hex, alpha)`
+Set the alpha-value in a hex-color
+
+    var color = rgbHex(255, 0, 0);
+    var colorTransparent = nsColor.hexSetAlpha(color, .5) //=> "ff000080"
+
 
 
 ## Copyright and License

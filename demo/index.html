@@ -32,18 +32,18 @@
 	<script src="../src/color.js"></script>
 	<script>
 		function header(text){
-			$('body').append( $('<h2>' + text + '</h2>') );			
+			$('body').append( $('<h2>' + text + '</h2>') );
 		}
 
 		function button(onClick){
-			$('body').append( $('<button onClick="'+onClick+'">' + onClick+ '</button><br>') );			
+			$('body').append( $('<button onClick="'+onClick+'">' + onClick+ '</button><br>') );
 		}
-		
+
 		function display(functionStr, urlResult){
 			var func = new Function('return '+functionStr),
 					funcReturn = func(),
 					funcReturnAsString;
-					
+
 			funcReturnAsString = funcReturn;
 			if ($.isArray(funcReturn)){
 			  funcReturnAsString = '[';
@@ -61,38 +61,45 @@
 				}
 				funcReturnAsString += ']';
 			}
+            if ($.isPlainObject(funcReturn))
+                funcReturnAsString = JSON.stringify(funcReturn);
 
 
-			var $p = $('<p></p>').appendTo($('body'));			
+
+			var $p = $('<p></p>').appendTo($('body'));
 			$('<span class="function">').appendTo($p).text(functionStr);
 			$('<span>').appendTo($p).text('=>');
 			$('<span class="result">').appendTo($p).text(funcReturnAsString);
 			$('<span>').appendTo($p).text('(' + (typeof funcReturn) + ')');
 
-			console.log(functionStr, '=>', funcReturnAsString, 'return=',funcReturn);			
+			console.log(functionStr, '=>', funcReturnAsString, 'return=',funcReturn);
 		}
 
-		header('math.js');	
-			display('significant(123999, 3)');	
-			display('precision(12.345678, 3)');	
+		header('math.js');
+			display('significant(123999, 3)');
+			display('precision(12.345678, 3)');
 			display('nearest(1234567, 100)');
 			display('roundDownTo(1234567, 100)');
 			display('roundToRange(123, 100, 200)');
 			display('roundToRange(999, 100, 200)');
 			display('toDecimal(1234)');
 
-	
+
 		header('json.js');
 			display("serializeJSON({anId:'aValue', anotherId:'another value'})");
-		
-		
+
+
 		header('color.js');
 			display('brightness(0, 0, 0)');
 			display('brightness(100, 100, 100)');
 			display('brightness(255, 255, 255)');
 			display("colorContrastHEX('646464')");
 			display('colorContrastRGB(200, 200, 200)');
-	
+
+            display('hexRgb("4183c4")'); //=> {red: 65, green: 131, blue: 196, alpha: 255}
+            display('rgbHex(65, 131, 196)'); //=> '4183c4'
+            display('hexSetAlpha(rgbHex(255, 0, 0), .5)'); //=> '4183c4'
+
 	</script>
 
 </body>
